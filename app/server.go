@@ -118,12 +118,15 @@ func handler(method, path, version string, headers map[string]string, body strin
 			responseBody,
 		)
 		conn.Write([]byte(response))
+		return
 	}
 
 	if path == "/" {
 		conn.Write([]byte(okResponseHead))
+		return
 	} else {
 		conn.Write([]byte(notFoundResponseHead))
+		return
 	}
 }
 
