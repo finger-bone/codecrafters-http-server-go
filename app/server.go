@@ -119,6 +119,12 @@ func handler(method, path, version string, headers map[string]string, body strin
 		)
 		conn.Write([]byte(response))
 	}
+
+	if path == "/" {
+		conn.Write([]byte(okResponseHead))
+	} else {
+		conn.Write([]byte(notFoundResponseHead))
+	}
 }
 
 func contentLengthHeader(body string) map[string]string {
