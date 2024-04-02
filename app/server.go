@@ -10,8 +10,11 @@ import (
 )
 
 const okResponseHead = "HTTP/1.1 200 OK"
-const crlf = "\r\n"
 const notFoundResponseHead = "HTTP/1.1 404 Not Found"
+const createdResponseHead = "HTTP/1.1 201 Created"
+const crlf = "\r\n"
+const getMethod = "GET"
+const postMethod = "POST"
 
 func main() {
 	directory := flag.String("directory", "", "Directory path")
@@ -127,7 +130,7 @@ func handler(dir, method, path, version string, headers map[string]string, body 
 		return
 	}
 
-	if strings.HasPrefix(path, "/files") {
+	if strings.HasPrefix(path, "/files") && method == getMethod {
 		filename := path[7:]
 		file, err := os.Open(dir + "/" + filename)
 		if err != nil {
@@ -146,6 +149,31 @@ func handler(dir, method, path, version string, headers map[string]string, body 
 			mergeMaps(contentLengthHeader(string(responseBody[:n])), map[string]string{"Content-Type": "application/octet-stream"}),
 			string(responseBody[:n]),
 		))
+		return
+	}
+
+	if strings.HasPrefix(path, "/files") && method == postMethod {
+		filename := path[7:]
+		file, err := os.Create(dir + "/" + filename)
+		if err != nil {
+			conn.Write(buildResponse(notFoundResponseHead, nil, ""))
+			return
+		}
+		defer func() {
+			err := file.Close()
+			if err != nil {
+				log.Println("Error closing file: ", err.Error())
+				return
+			}
+		}()
+
+		_, err = file.Write([]byte(body))
+		if err != nil {
+			conn.Write(buildResponse(notFoundResponseHead, nil, ""))
+			return
+		}
+
+		conn.Write(buildResponse(createdResponseHead, nil, ""))
 		return
 	}
 
