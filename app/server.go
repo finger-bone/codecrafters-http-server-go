@@ -43,7 +43,7 @@ func main() {
 		}
 	}()
 
-	okResponse := httpProtocol + " " + httpStatusOK + " " + httpVersion + doubleCrlf
+	okResponse := httpProtocol + "/" + httpVersion + " " + httpStatusOK + " " + httpVersion + doubleCrlf
 	_, err = conn.Write([]byte(okResponse))
 	if err != nil {
 		log.Println("Error writing response: ", err.Error())
