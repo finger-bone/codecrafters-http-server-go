@@ -143,7 +143,7 @@ func handler(dir, method, path, version string, headers map[string]string, body 
 		}
 		conn.Write(buildResponse(
 			okResponseHead,
-			mergeMaps(contentLengthHeader(string(responseBody[:n])), map[string]string{"Content-Type": "text/plain"}),
+			mergeMaps(contentLengthHeader(string(responseBody[:n])), map[string]string{"Content-Type": "application/octet-stream"}),
 			string(responseBody[:n]),
 		))
 		return
