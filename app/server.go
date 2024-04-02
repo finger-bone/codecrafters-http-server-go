@@ -111,13 +111,14 @@ func handler(method, path, version string, headers map[string]string, body strin
 		return
 	}
 
-	if path == "/echo" {
+	if strings.HasPrefix(path, "/echo") {
 		responseBody := path[6:]
 		conn.Write(buildResponse(
 			okResponseHead,
 			mergeMaps(contentLengthHeader(responseBody), map[string]string{"Content-Type": "text/plain"}),
 			responseBody,
 		))
+		return
 	}
 
 	if path == "/" {
@@ -126,7 +127,6 @@ func handler(method, path, version string, headers map[string]string, body strin
 	}
 
 	conn.Write(buildResponse(notFoundResponseHead, nil, ""))
-	return
 }
 
 func contentLengthHeader(body string) map[string]string {
