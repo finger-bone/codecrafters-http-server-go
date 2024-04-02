@@ -84,24 +84,15 @@ func readConn(conn net.Conn) (string, error) {
 	return string(buf[:n]), nil
 }
 
-func writeConn(conn net.Conn, resp string) error {
-	_, err := conn.Write([]byte(resp))
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func splitPath(path string) []string {
-	// splitPath only into 2 parts
-	// /echo/foo/bar to [echo, foo/bar]
-	ret := make([]string, 2)
-	splitted := strings.Split(path, "/")
-	ret[0] = splitted[1]
-	ret[1] = strings.Join(splitted[2:], "/")
-	return ret
-}
+// func splitPath(path string) []string {
+// 	// splitPath only into 2 parts
+// 	// /echo/foo/bar to [echo, foo/bar]
+// 	ret := make([]string, 2)
+// 	splitted := strings.Split(path, "/")
+// 	ret[0] = splitted[1]
+// 	ret[1] = strings.Join(splitted[2:], "/")
+// 	return ret
+// }
 
 func handler(method, path, version string, headers map[string]string, body string, conn net.Conn) {
 	log.Println("Method: ", method)
@@ -112,20 +103,19 @@ func handler(method, path, version string, headers map[string]string, body strin
 
 	if path == "/user-agent" {
 		responseBody := headers["User-Agent"]
-		response := buildResponse(
+		conn.Write(buildResponse(
 			okResponseHead,
 			mergeMaps(contentLengthHeader(responseBody), map[string]string{"Content-Type": "text/plain"}),
 			responseBody,
-		)
-		conn.Write([]byte(response))
+		))
 		return
 	}
 
 	if path == "/" {
-		conn.Write([]byte(okResponseHead))
+		conn.Write(buildResponse(okResponseHead, nil, ""))
 		return
 	} else {
-		conn.Write([]byte(notFoundResponseHead))
+		conn.Write(buildResponse(notFoundResponseHead, nil, ""))
 		return
 	}
 }
@@ -138,14 +128,16 @@ func buildResponse(
 	statusText string,
 	headers map[string]string,
 	body string,
-) string {
+) []byte {
 	response := statusText + crlf
 	for key, value := range headers {
 		response += key + ": " + value + crlf
 	}
 	response += crlf
-	response += body
-	return response
+	if body != "" {
+		response += body
+	}
+	return []byte(response)
 }
 
 func mergeMaps(map1, map2 map[string]string) map[string]string {
