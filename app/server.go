@@ -1,12 +1,12 @@
 package main
 
 import (
+	"flag"
 	"log"
-	"strconv"
-	"strings"
-
 	"net"
 	"os"
+	"strconv"
+	"strings"
 )
 
 const okResponseHead = "HTTP/1.1 200 OK"
@@ -14,6 +14,11 @@ const crlf = "\r\n"
 const notFoundResponseHead = "HTTP/1.1 404 Not Found"
 
 func main() {
+	directory := flag.String("directory", "", "Directory path")
+	flag.Parse()
+
+	log.Println("Directory:", *directory)
+
 	l, err := net.Listen("tcp", "0.0.0.0:4221")
 	if err != nil {
 		log.Println("Failed to bind to port 4221")
@@ -35,11 +40,11 @@ func main() {
 			continue
 		}
 
-		go serve(conn)
+		go serve(*directory, conn)
 	}
 }
 
-func serve(conn net.Conn) {
+func serve(dir string, conn net.Conn) {
 	defer func() {
 		err := conn.Close()
 		if err != nil {
@@ -57,7 +62,7 @@ func serve(conn net.Conn) {
 	startLine, headers, body := splitRequest(req)
 	method, path, version := splitStartLine(startLine)
 
-	handler(method, path, version, headers, body, conn)
+	handler(dir, method, path, version, headers, body, conn)
 }
 
 func splitRequest(req string) (string, map[string]string, string) {
@@ -90,17 +95,7 @@ func readConn(conn net.Conn) (string, error) {
 	return string(buf[:n]), nil
 }
 
-// func splitPath(path string) []string {
-// 	// splitPath only into 2 parts
-// 	// /echo/foo/bar to [echo, foo/bar]
-// 	ret := make([]string, 2)
-// 	splitted := strings.Split(path, "/")
-// 	ret[0] = splitted[1]
-// 	ret[1] = strings.Join(splitted[2:], "/")
-// 	return ret
-// }
-
-func handler(method, path, version string, headers map[string]string, body string, conn net.Conn) {
+func handler(dir, method, path, version string, headers map[string]string, body string, conn net.Conn) {
 	log.Println("Method: ", method)
 	log.Println("Path: ", path)
 	log.Println("Version: ", version)
@@ -129,6 +124,28 @@ func handler(method, path, version string, headers map[string]string, body strin
 
 	if path == "/" {
 		conn.Write(buildResponse(okResponseHead, nil, ""))
+		return
+	}
+
+	if strings.HasPrefix(path, "/files") {
+		filename := path[7:]
+		file, err := os.Open(dir + "/" + filename)
+		if err != nil {
+			conn.Write(buildResponse(notFoundResponseHead, nil, ""))
+			return
+		}
+		responseBody := make([]byte, 1024)
+		// read the file
+		n, err := file.Read(responseBody)
+		if err != nil {
+			conn.Write(buildResponse(notFoundResponseHead, nil, ""))
+			return
+		}
+		conn.Write(buildResponse(
+			okResponseHead,
+			mergeMaps(contentLengthHeader(string(responseBody[:n])), map[string]string{"Content-Type": "text/plain"}),
+			string(responseBody[:n]),
+		))
 		return
 	}
 
