@@ -9,3 +9,5 @@
 module github.com/codecrafters-io/http-server-starter-go
 
 go 1.19
+
+require github.com/quasilyte/gogrep v0.5.0

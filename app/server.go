@@ -2,9 +2,9 @@ package main
 
 import (
 	"log"
+	"strconv"
 	"strings"
 
-	// Uncomment this block to pass the first stage
 	"net"
 	"os"
 )
@@ -52,11 +52,24 @@ func main() {
 	startLine := strings.Split(splitted[0], " ")
 	_, path, _ := startLine[0], startLine[1], startLine[2]
 
-	if path == "/" {
-		writeConn(conn, okResponseHead+crlf+crlf)
-	} else {
-		writeConn(conn, notFoundResponseHead+crlf+crlf)
+	// if path == "/" {
+	// 	writeConn(conn, okResponseHead+crlf+crlf)
+	// } else {
+	// 	writeConn(conn, notFoundResponseHead+crlf+crlf)
+	// }
+
+	splittedPath := splitPath(path)
+	log.Println(splittedPath)
+
+	if splittedPath[0] == "echo" {
+		contentLength := strconv.Itoa(len(splittedPath[1]))
+		writeConn(conn,
+			okResponseHead+crlf+
+				"Content-Type: text/plain"+crlf+
+				"Content-Length: "+contentLength+crlf+crlf+
+				splittedPath[1])
 	}
+
 }
 
 func readConn(conn net.Conn) (string, error) {
@@ -76,4 +89,14 @@ func writeConn(conn net.Conn, resp string) error {
 	}
 
 	return nil
+}
+
+func splitPath(path string) []string {
+	// splitPath only into 2 parts
+	// /echo/foo/bar to [echo, foo/bar]
+	ret := make([]string, 2)
+	splitted := strings.Split(path, "/")
+	ret[0] = splitted[1]
+	ret[1] = strings.Join(splitted[2:], "/")
+	return ret
 }
