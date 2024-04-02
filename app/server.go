@@ -48,31 +48,30 @@ func main() {
 		os.Exit(1)
 	}
 
-	splitted := strings.Split(req, crlf)
-	startLine := strings.Split(splitted[0], " ")
-	_, path, _ := startLine[0], startLine[1], startLine[2]
+	startLine, headers, body := splitRequest(req)
+	method, path, version := splitStartLine(startLine)
 
-	splittedPath := splitPath(path)
-	log.Println(splittedPath)
+	handler(method, path, version, headers, body, conn)
+}
 
-	if splittedPath[0] == "echo" {
-		contentLength := strconv.Itoa(len(splittedPath[1]))
-		writeConn(conn,
-			okResponseHead+crlf+
-				"Content-Type: text/plain"+crlf+
-				"Content-Length: "+contentLength+crlf+crlf+
-				splittedPath[1])
-		return
+func splitRequest(req string) (string, map[string]string, string) {
+	splitted := strings.Split(req, crlf+crlf)
+	startLine := strings.Split(splitted[0], crlf)[0]
+	headers := strings.Split(splitted[0], crlf)[1:]
+
+	headersMap := make(map[string]string)
+	for _, header := range headers {
+		splitted := strings.Split(header, ": ")
+		headersMap[splitted[0]] = splitted[1]
 	}
 
-	if path == "/" {
-		writeConn(conn, okResponseHead+crlf+crlf)
-		return
-	} else {
-		writeConn(conn, notFoundResponseHead+crlf+crlf)
-		return
-	}
+	body := splitted[1]
+	return startLine, headersMap, body
+}
 
+func splitStartLine(startLine string) (string, string, string) {
+	splitted := strings.Split(startLine, " ")
+	return splitted[0], splitted[1], splitted[2]
 }
 
 func readConn(conn net.Conn) (string, error) {
@@ -102,4 +101,47 @@ func splitPath(path string) []string {
 	ret[0] = splitted[1]
 	ret[1] = strings.Join(splitted[2:], "/")
 	return ret
+}
+
+func handler(method, path, version string, headers map[string]string, body string, conn net.Conn) {
+	log.Println("Method: ", method)
+	log.Println("Path: ", path)
+	log.Println("Version: ", version)
+	log.Println("Headers: ", headers)
+	log.Println("Body: ", body)
+
+	if path == "/user-agent" {
+		responseBody := headers["User-Agent"]
+		response := buildResponse(
+			okResponseHead,
+			mergeMaps(contentLengthHeader(responseBody), map[string]string{"Content-Type": "text/plain"}),
+			responseBody,
+		)
+		conn.Write([]byte(response))
+	}
+}
+
+func contentLengthHeader(body string) map[string]string {
+	return map[string]string{"Content-Length": strconv.Itoa(len(body))}
+}
+
+func buildResponse(
+	statusText string,
+	headers map[string]string,
+	body string,
+) string {
+	response := statusText + crlf
+	for key, value := range headers {
+		response += key + ": " + value + crlf
+	}
+	response += crlf
+	response += body
+	return response
+}
+
+func mergeMaps(map1, map2 map[string]string) map[string]string {
+	for key, value := range map2 {
+		map1[key] = value
+	}
+	return map1
 }
