@@ -28,12 +28,18 @@ func main() {
 		}
 	}()
 
-	conn, err := l.Accept()
-	if err != nil {
-		log.Println("Error accepting connection: ", err.Error())
-		os.Exit(1)
-	}
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			log.Println("Error accepting connection: ", err.Error())
+			continue
+		}
 
+		go serve(conn)
+	}
+}
+
+func serve(conn net.Conn) {
 	defer func() {
 		err := conn.Close()
 		if err != nil {
@@ -45,7 +51,7 @@ func main() {
 	req, err := readConn(conn)
 	if err != nil {
 		log.Println("Error reading connection: ", err.Error())
-		os.Exit(1)
+		return
 	}
 
 	startLine, headers, body := splitRequest(req)
