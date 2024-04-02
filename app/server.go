@@ -52,12 +52,6 @@ func main() {
 	startLine := strings.Split(splitted[0], " ")
 	_, path, _ := startLine[0], startLine[1], startLine[2]
 
-	// if path == "/" {
-	// 	writeConn(conn, okResponseHead+crlf+crlf)
-	// } else {
-	// 	writeConn(conn, notFoundResponseHead+crlf+crlf)
-	// }
-
 	splittedPath := splitPath(path)
 	log.Println(splittedPath)
 
@@ -68,6 +62,15 @@ func main() {
 				"Content-Type: text/plain"+crlf+
 				"Content-Length: "+contentLength+crlf+crlf+
 				splittedPath[1])
+		return
+	}
+
+	if path == "/" {
+		writeConn(conn, okResponseHead+crlf+crlf)
+		return
+	} else {
+		writeConn(conn, notFoundResponseHead+crlf+crlf)
+		return
 	}
 
 }
