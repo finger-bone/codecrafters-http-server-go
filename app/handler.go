@@ -29,8 +29,15 @@ func handler(dir, method, path, version string, headers map[string]string, body 
 		responseHeaders := make(map[string]string)
 		responseHeaders = mergeMaps(responseHeaders, contentLengthHeader(responseBody))
 		responseHeaders = mergeMaps(responseHeaders, map[string]string{"Content-Type": "text/plain"})
-		if enc, ok := headers["Accept-Encoding"]; ok && enc != "invalid-encoding" {
-			responseHeaders = mergeMaps(responseHeaders, contentEncodingHeader(enc))
+
+		if enc, ok := headers["Accept-Encoding"]; ok {
+			allEncodings := splitArray(enc)
+			for _, encoding := range allEncodings {
+				if encoding == "gzip" {
+					responseHeaders = mergeMaps(responseHeaders, contentEncodingHeader("gzip"))
+					break
+				}
+			}
 		}
 		conn.Write(buildResponse(
 			okResponseHead,

@@ -19,6 +19,10 @@ func splitRequest(req string) (string, map[string]string, string) {
 	return startLine, headersMap, body
 }
 
+func splitArray(req string) []string {
+	return strings.Split(req, ", ")
+}
+
 func splitStartLine(startLine string) (string, string, string) {
 	splitted := strings.Split(startLine, " ")
 	return splitted[0], splitted[1], splitted[2]
