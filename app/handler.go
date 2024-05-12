@@ -29,9 +29,6 @@ func handler(dir, method, path, version string, headers map[string]string, body 
 	if strings.HasPrefix(path, "/echo") {
 		responseBody := path[6:]
 		responseHeaders := make(map[string]string)
-		responseHeaders = mergeMaps(responseHeaders, contentLengthHeader(responseBody))
-		responseHeaders = mergeMaps(responseHeaders, map[string]string{"Content-Type": "text/plain"})
-
 		if enc, ok := headers["Accept-Encoding"]; ok {
 			allEncodings := splitArray(enc)
 			for _, encoding := range allEncodings {
@@ -47,6 +44,9 @@ func handler(dir, method, path, version string, headers map[string]string, body 
 				}
 			}
 		}
+		responseHeaders = mergeMaps(responseHeaders, contentLengthHeader(responseBody))
+		responseHeaders = mergeMaps(responseHeaders, map[string]string{"Content-Type": "text/plain"})
+
 		conn.Write(buildResponse(
 			okResponseHead,
 			responseHeaders,
