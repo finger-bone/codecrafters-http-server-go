@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"compress/gzip"
 	"log"
 	"net"
 	"os"
@@ -35,6 +37,12 @@ func handler(dir, method, path, version string, headers map[string]string, body 
 			for _, encoding := range allEncodings {
 				if encoding == "gzip" {
 					responseHeaders = mergeMaps(responseHeaders, contentEncodingHeader("gzip"))
+					// use gzip to compress the responseBody
+					var buf bytes.Buffer
+					zw := gzip.NewWriter(&buf)
+					_, _ = zw.Write([]byte(responseBody))
+					zw.Close()
+					responseBody = buf.String()
 					break
 				}
 			}
